@@ -1,8 +1,13 @@
 const express = require('express')
-const path = require('path')
 const ejs = require('ejs')
 const mongoose = require('mongoose')
 const fileUpload = require('express-fileupload')
+const newPostController = require('./controllers/newPost')
+const homeController = require('./controllers/home')
+const getPostController = require('./controllers/getPost')
+const storePostController = require('./controllers/storePost')
+const searchController = require('./controllers/search')
+const validateMiddleware = require('./middleware/validationMiddleware')
 
 
 mongoose.connect('mongodb://localhost/my_database', {
@@ -12,6 +17,11 @@ mongoose.connect('mongodb://localhost/my_database', {
 
 const app = new express()
 
+const customMiddleWare = (req,res,next)=> {
+    console.log('Custom Middle Ware')
+    next()
+}
+
 app.set('view engine', 'ejs')
 
 app.use(express.static('public'))
@@ -20,62 +30,21 @@ app.use(express.urlencoded({
 }))
 app.use(express.json())
 app.use(fileUpload())
+app.use(customMiddleWare)
+app.use('/posts/store', validateMiddleware)
 
-const BlogPost = require('./models/blogPost')
 
-app.get('/', async (req, res) => {
-   // res.render(path.resolve(__dirname, 'pages/index.html'))
-    const blogposts = await BlogPost.find({})
-    console.log(blogposts)
-    res.render('index', {blogposts: blogposts})
-})
 
-app.get('/about', (req, res) => {
-   // res.sendFile(path.resolve(__dirname, 'pages/about.html'))
-    res.render('about')
-}) 
+app.get('/', homeController)
 
-app.get('/contact', (req, res) => {
-   // res.sendFile(path.resolve(__dirname, 'pages/contact.html'))
-    res.render('contact')
-})
-app.get('/post/:id', async (req, res) => {
-   // res.sendFile(path.resolve(__dirname, 'pages/post.html'))
-   const blogpost = await BlogPost.findById(req.params.id)
-    res.render('post', {blogpost})
-})
 
-app.get('/posts/new', (req, res) => {
-    // res.sendFile(path.resolve(__dirname, 'pages/post.html'))
-     res.render('create')
- })
+app.get('/post/:id', getPostController)
 
- app.post('/posts/store', (req,res) => {
-     let image = req.files.image
-     image.mv(path.resolve(__dirname, 'public/img', image.name), async (error) => {
-         await BlogPost.create({...req.body, image:'/img/' + image.name})
-         res.redirect('/')
-     })
-    //  })
-    //  await BlogPost.create(req.body, (error, blogpost) => {
-    //     console.log(req.body)
-    //      res.redirect('/')
-    //  })
- })
+app.get('/posts/new', newPostController)
 
- app.post('/posts/seek', async (req,res) => {
-     const searchItem = req.body.body
-     console.log(searchItem)
-     const reg = new RegExp(searchItem, 'i')
-     const blogposts = await BlogPost.find(
-         {
-         title: reg
-     }, (error, blogposts) => {
-         console.log(error, blogposts)
-     })
-     console.log(blogposts)
-     res.render('index', {blogposts: blogposts})
-})
+ app.post('/posts/store', storePostController)
+
+ app.post('/posts/seek', searchController)
  
 
 
