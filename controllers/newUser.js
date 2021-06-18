@@ -1,3 +1,3 @@
 module.exports = (req, res) => {
-    res.render('Contact')
-} 
+    res.render('register')
+}
